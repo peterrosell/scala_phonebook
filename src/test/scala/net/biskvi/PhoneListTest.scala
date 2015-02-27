@@ -30,7 +30,7 @@ class PhoneListTest extends FlatSpec with ShouldMatchers {
     PhoneList.isConsistent(Stream("bob" -> "91 12 54 26", "alice" -> "97 625 992", "emergency" -> "911")) should be(false)
   }
 
-  it should "not be consistent from phone_data.txt" in time {
+  it should "be consistent from phone_data.txt" in time {
     PhoneList.isConsistent(getClass.getResource("/phone_data.txt")) should be(true)
   }
 

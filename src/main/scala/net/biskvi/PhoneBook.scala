@@ -2,21 +2,41 @@ package net.biskvi
 
 import net.biskvi.PhoneBook.PhoneBookEntry
 
+import scala.collection.parallel.mutable
+import scala.collection.parallel.mutable.ParSet
+
 class PhoneBook {
 
   val rootNode = new DigitNode
+  val conflicts: mutable.ParSet[Conflict] = ParSet.empty
+  var adds = 0
 
-  def add(entry: PhoneBookEntry): Unit = {
-    def add(name: String, digits: List[Int], node: DigitNode): Unit = {
+  def add(entry: PhoneBookEntry): Boolean = {
+    def add(name: String, digits: List[Int], node: DigitNode): Boolean = {
       digits match {
         case Nil => throw new IllegalArgumentException("No phone number")
         case x :: Nil =>
-          node.setEntry(x, entry)
+          val entryConflicts = node.setEntry(x, entry)
+          if (entryConflicts.nonEmpty) {
+            entryConflicts.foreach(conflicts += _)
+            false
+          } else {
+            true
+          }
         case x :: xs =>
-          add(name, xs, node.digitNode(x))
+          val digitNode = node.node(x)
+          digitNode match {
+            case person: PersonNode =>
+//              println("CONFLICT--------------> " + entry)
+              conflicts += Conflict(entry, person.entry)
+              false
+            case _ =>
+              add(name, xs, digitNode.asInstanceOf[DigitNode])
+          }
       }
     }
 
+    adds += 1
     add(entry._1, numberAsDigitList(entry._2), rootNode)
   }
 
@@ -32,7 +52,6 @@ class PhoneBook {
             case Some(digitNode) => entryByNumber(xs, digitNode)
             case _ => None
           }
-        //          node.getDigitNode(x).map(b=> entryByNumber(xs,b)).flatten
         case _ => None
       }
     }
@@ -40,24 +59,7 @@ class PhoneBook {
     entryByNumber(numberAsDigitList(number), rootNode)
   }
 
-//  def indent(i: Int, writer: Writer): Unit = for (x <- 0 until i) writer.append("  ")
-
-  override def toString = {
-    rootNode.toString
-/*
-    def write(level: Int, node: Node, output: Writer): Unit = node match {
-      case personNode: PersonNode =>
-        indent(level, output)
-        output.append(personNode.toString).append("\n")
-      case digitNode: DigitNode =>
-        digitNode.digits.foreach(write(level + 1, _, output))
-      case _ =>
-    }
-    val sw = new StringWriter
-    write(0, rootNode, sw)
-    sw.toString
-*/
-  }
+  override def toString = rootNode.toString
 }
 
 object PhoneBook {

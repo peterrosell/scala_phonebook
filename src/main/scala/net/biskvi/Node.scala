@@ -29,8 +29,6 @@ class DigitNode extends Node {
   val isPersonNode = false
   val digits: ArrayBuffer[Node] = mutable.ArrayBuffer.fill(10)(new EmptyNode)
 
-  def hasEntryAt(i: Int) = digits(i).isPersonNode
-
   def getDigitNode(i: Int): Option[DigitNode] = digits(i) match {
     case digitNode:DigitNode => Some(digitNode)
     case _ => None

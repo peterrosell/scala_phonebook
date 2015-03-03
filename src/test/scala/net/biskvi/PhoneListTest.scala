@@ -9,16 +9,30 @@ import scala.io.Source
 
 
 class PhoneListTest extends FlatSpec with ShouldMatchers {
-
-  def time[A](f: => A) = {
+  
+ def time[A](f: => A)(implicit iterations:Int = 1) = {
     val s = System.nanoTime
-    val ret = f
-    println("time: " + (System.nanoTime - s) / 1e6 + "ms")
-    ret
+    for( i <- 0 until iterations) {
+      f
+    }
+    println(s"Average time of $iterations iterations: " + (System.nanoTime - s) / 1e6 / iterations + "ms")
+  }
+
+  "Test environment" should "warmup with read a file of 65535 entries" in {
+    val persons = readPersons("/phone_data_65535.txt")
+
+    time {
+      val phoneBook = new PhoneBook
+      persons.map(phoneBook.add).force
+      phoneBook.adds should be(65535)
+      phoneBook.conflicts.size should be(94)
+      //    phoneBook.conflicts.map(println)
+    }(100)
+
   }
 
 
-  it should "not be consistent with two entries with number 1 and 12" in time {
+  "A phone list" should "not be consistent with two entries with number 1 and 12" in time {
     PhoneList.isConsistent(Stream("bob" -> "1", "alice" -> "12")) should be(false)
   }
 
@@ -40,16 +54,15 @@ class PhoneListTest extends FlatSpec with ShouldMatchers {
 
   "A phone list" should "be consistent from phone_data.txt" in time {
     PhoneList.isConsistent(getClass.getResource("/phone_data.txt")) should be(true)
-  }
+  }(100)
 
   it should "not be consistent from phone_data_10000.txt" in time {
     PhoneList.isConsistent(getClass.getResource("/phone_data_10000.txt")) should be(false)
-  }
+  }(100)
 
   it should "not be consistent from phone_data_65535.txt" in time {
     PhoneList.isConsistent(getClass.getResource("/phone_data_65535.txt")) should be(false)
-  }
-
+  }(100)
 
   "A PhoneBook" should "contain one entry" in {
     val phoneBook = new PhoneBook
@@ -89,51 +102,47 @@ class PhoneListTest extends FlatSpec with ShouldMatchers {
   it should "read a file of 1000 entries" in {
     val persons = readPersons("/phone_data.txt")
 
-    val phoneBook = new PhoneBook
     time {
+      val phoneBook = new PhoneBook
       persons.map(phoneBook.add).force
-    }
+      phoneBook.adds should be(1000)
+      phoneBook.conflicts.size should be(0)
+      //    phoneBook.conflicts.map(println)
+    }(100)
 
-    phoneBook.adds should be(1000)
-    phoneBook.conflicts.size should be(0)
 
-    //    phoneBook.conflicts.map(println)
   }
 
   it should "read a file of 10000 entries" in {
     val persons = readPersons("/phone_data_10000.txt")
 
-    val phoneBook = new PhoneBook
     time {
+      val phoneBook = new PhoneBook
       persons.map(phoneBook.add).force
-    }
+      phoneBook.adds should be(10000)
+      phoneBook.conflicts.size should be(2)
+      //    phoneBook.conflicts.map(println)
+    }(100)
 
-    phoneBook.adds should be(10000)
-    phoneBook.conflicts.size should be(2)
 
-    //    phoneBook.conflicts.map(println)
   }
 
   it should "read a file of 65535 entries" in {
     val persons = readPersons("/phone_data_65535.txt")
 
-    val phoneBook = new PhoneBook
     time {
+      val phoneBook = new PhoneBook
       persons.map(phoneBook.add).force
-    }
+      phoneBook.adds should be(65535)
+      phoneBook.conflicts.size should be(94)
+      //    phoneBook.conflicts.map(println)
+    }(100)
 
-    phoneBook.adds should be(65535)
-    phoneBook.conflicts.size should be(94)
-
-    //    phoneBook.conflicts.map(println)
-  }
-
-  def parseLine(s: String): PhoneBookEntry = s.split(",").toList match {
-    case name :: number :: Nil => (name, number)
-    case _ => throw new ParseException("Invalid data: " + s, -1)
   }
 
   def readPersons(url: String): Stream[(String, String)] = {
-    Source.fromURL(getClass.getResource(url)).getLines().filterNot(_.contains("Phone Number")).map(parseLine).toStream
+    val lines = Source.fromURL(getClass.getResource(url)).getLines()
+    lines.next()
+    lines.map(PhoneList.parseLine).toStream
   }
 }

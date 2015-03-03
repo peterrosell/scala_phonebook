@@ -24,7 +24,7 @@ object PhoneList {
   def isConsistent(persons: Stream[PhoneBookEntry]): Boolean = {
     val phoneBook = new PhoneBook
     persons.map(phoneBook.add).takeWhile(b=>b).force
-    println( "nr of adds:" + phoneBook.adds)
+//    println( "nr of adds:" + phoneBook.adds)
     phoneBook.conflicts.isEmpty
   }
 

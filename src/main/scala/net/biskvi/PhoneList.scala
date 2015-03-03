@@ -19,7 +19,11 @@ object PhoneList {
 
   def isConsistent(file: File): Boolean= isConsistent(Source.fromFile(file))
 
-  def isConsistent(source: Source): Boolean = isConsistent(source.getLines().filterNot(_.contains("Phone Number")).map(parseLine).toStream)
+  def isConsistent(source: Source): Boolean = {
+    val lines = source.getLines()
+    lines.next()  // skip first line
+    isConsistent(lines.map(parseLine).toStream)
+  }
 
   def isConsistent(persons: Stream[PhoneBookEntry]): Boolean = {
     val phoneBook = new PhoneBook
@@ -37,25 +41,4 @@ object PhoneList {
         Some(e.getMessage)
     }
   }
-
-  def showInconsistentEntries(url: URL): Stream[Option[String]] = showInconsistentEntries(Source.fromURL(url))
-
-  def showInconsistentEntries(file: File): Stream[Option[String]] = showInconsistentEntries(Source.fromFile(file))
-
-  def showInconsistentEntries(source: Source): Stream[Option[String]] = showInconsistentEntries(source.getLines().filterNot(_.contains("Phone Number")).map(parseLine).toStream)
-
-  def showInconsistentEntries(persons:Stream[PhoneBookEntry]) : Stream[Option[String]] = {
-    val phoneBook = new PhoneBook
-    persons.map(add(phoneBook,_)).filter(_.isDefined)
-  }
-
-  def catchAndLog(f: => Unit) = {
-    try {
-      f
-    } catch {
-      case e: Throwable => Some(e.getMessage)
-    }
-    None
-  }
-
 }

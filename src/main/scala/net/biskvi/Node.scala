@@ -6,54 +6,63 @@ import net.biskvi.PhoneBook.PhoneBookEntry
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
-import scala.collection.parallel.mutable.ParSet
 
 abstract class Node {
-  val isEmpty: Boolean
+  val isEmpty = false: Boolean
   val isPersonNode: Boolean
   val isDigitNode = !isPersonNode
 }
 
 class EmptyNode extends Node {
-  val isEmpty = true
+  override val isEmpty = true
   val isPersonNode = false
   override val isDigitNode = false
 }
 
 case class PersonNode(entry: PhoneBookEntry) extends Node {
-  val isEmpty = false
   val isPersonNode = true
 
   override def toString = entry._2.toList.filter(c => c >= '0' && c <= '9').mkString + " => " + entry._1 + ": " + entry._2
 }
 
 class DigitNode extends Node {
-  def getDigitNode(i: Int): Option[DigitNode] = if (digits(i).isDigitNode)
-    Some(digits(i).asInstanceOf[DigitNode])
-  else
-    None
-
-  def node(i: Int): Node = digits(i) match {
-    case digitNode: DigitNode => digitNode
-    case emptyNode: EmptyNode => digits.update(i, new DigitNode); digits(i).asInstanceOf[DigitNode]
-    case personNode: PersonNode => personNode
-  }
-
-  val isEmpty = false
+  val isPersonNode = false
+  val digits: ArrayBuffer[Node] = mutable.ArrayBuffer.fill(10)(new EmptyNode)
 
   def hasEntryAt(i: Int) = digits(i).isPersonNode
 
-  def entry(i: Int): Option[PhoneBookEntry] = if (!digits(i).isEmpty)
-    Some(digits(i).asInstanceOf[PersonNode].entry)
-  else
-    None
+  def getDigitNode(i: Int): Option[DigitNode] = digits(i) match {
+    case digitNode:DigitNode => Some(digitNode)
+    case _ => None
+  }
 
-  def setEntry(i: Int, entry: PhoneBookEntry): Set[Conflict] = if (digits(i).isEmpty) {
+  def child(i: Int): Node = digits(i) match {
+    case digitNode: DigitNode => digitNode
+    case emptyNode: EmptyNode =>
+      val digitNode = new DigitNode
+      digits.update(i, digitNode)
+      digitNode
+    case personNode: PersonNode => personNode
+  }
+
+  def entry(i: Int): Option[PhoneBookEntry] = digits(i) match {
+    case _:EmptyNode => None
+    case personNode:PersonNode => Some(personNode.entry)
+    case _:DigitNode=> throw new Exception("BUG! DigitNode don't have an entry.")
+  }
+
+  /**
+   * Set entry at index i. If a conflict is found all conflicting entries are returned and
+   * the new entry is NOT added.
+   *
+   * @return all conflicting entries
+   */
+  def setEntry(i: Int, entry: PhoneBookEntry): Set[PhoneBookEntry] = if (digits(i).isEmpty) {
     digits.update(i, PersonNode(entry))
     Set.empty
   } else {
 //    println("SET-CONFLICT--------------> " + entry)
-    getEntries(digits(i)).map(Conflict(entry, _))
+    getEntries(digits(i))
   }
 
   def getEntries(node: Node): Set[PhoneBookEntry] = {
@@ -65,9 +74,6 @@ class DigitNode extends Node {
     }
   }
 
-  val isPersonNode = false
-  collection.mutable.ArrayBuffer.fill(100)(-1)
-  val digits: ArrayBuffer[Node] = mutable.ArrayBuffer.fill(10)(new EmptyNode)
 
   def indent(i: Int, writer: Writer): Unit = for (x <- 0 until i) writer.append("  ")
 

@@ -18,20 +18,21 @@ class PhoneBook {
         case x :: Nil =>
           val entryConflicts = node.setEntry(x, entry)
           if (entryConflicts.nonEmpty) {
-            entryConflicts.foreach(conflicts += _)
+            entryConflicts.map(Conflict(entry,_)).foreach(conflicts += _)
             false
           } else {
             true
           }
         case x :: xs =>
-          val digitNode = node.node(x)
-          digitNode match {
+          node.child(x) match {
             case person: PersonNode =>
 //              println("CONFLICT--------------> " + entry)
               conflicts += Conflict(entry, person.entry)
               false
-            case _ =>
-              add(name, xs, digitNode.asInstanceOf[DigitNode])
+            case digitNode:DigitNode =>
+              add(name, xs, digitNode)
+            case emptyNode:EmptyNode =>
+              throw new Exception("BUG! Shall never get an empty node.")
           }
       }
     }

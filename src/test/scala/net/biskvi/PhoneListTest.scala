@@ -89,13 +89,22 @@ class PhoneListTest extends FlatSpec with ShouldMatchers {
     val phoneBook = new PhoneBook
     val bobNumber = "12"
     val aliceNumber = "13"
-    Stream("bob" -> bobNumber,"alice" -> aliceNumber).foreach(phoneBook.add)
+    Stream("bob" -> bobNumber, "alice" -> aliceNumber).foreach(phoneBook.add)
 
     phoneBook.entryByNumber(bobNumber).get._1 should be("bob")
     phoneBook.entryByNumber(bobNumber).get._2 should be("12")
 
     phoneBook.entryByNumber(aliceNumber).get._1 should be("alice")
     phoneBook.entryByNumber(aliceNumber).get._2 should be("13")
+  }
+
+  it should "return string with two entries" in {
+    val phoneBook = new PhoneBook
+    val bobNumber = "12"
+    val aliceNumber = "13"
+    Stream("bob" -> bobNumber,"alice" -> aliceNumber).foreach(phoneBook.add)
+
+    phoneBook.toString should be( "12 => bob: 12\n13 => alice: 13\n")
   }
 
 
